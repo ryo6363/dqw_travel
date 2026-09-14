@@ -4,8 +4,7 @@ const NARA_LAT = 34.6851;
 const NARA_LNG = 135.8048;
 const EARTH_RADIUS_KM = 6371;
 
-const NARA_STATION_LAT = 34.6812;
-const NARA_STATION_LNG = 135.8199;
+const NARA_STATION_NAME = 'JR奈良駅';
 
 const DISTANCE_TIER_ABYSS_EPITHETS = [
   '深淵なる　異境の地',
@@ -82,7 +81,7 @@ function getDistanceTier(km) {
 }
 
 function buildDriveUrl(spot) {
-  const origin = `${NARA_STATION_LAT},${NARA_STATION_LNG}`;
+  const origin = encodeURIComponent(NARA_STATION_NAME);
   const destination = `${spot.lat},${spot.lng}`;
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travel_mode=driving`;
 }
@@ -184,7 +183,7 @@ function renderSpots(spots) {
     const mapButton = document.createElement('button');
     mapButton.type = 'button';
     mapButton.className = 'spot-map-button';
-    mapButton.textContent = '🗺';
+    mapButton.textContent = '地図';
     mapButton.setAttribute('aria-label', `${spot.landmark}を地図で見る`);
     mapButton.addEventListener('click', (event) => {
       event.stopPropagation();
