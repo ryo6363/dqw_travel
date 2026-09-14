@@ -1,0 +1,50 @@
+[
+  { "id": "mie-01", "pref": "三重県", "region": "近畿", "landmark": "ナガシマスパーランド", "souvenir": "こしあんの餅菓子" },
+  { "id": "mie-02", "pref": "三重県", "region": "近畿", "landmark": "伊賀流忍者博物館", "souvenir": "手裏剣" },
+  { "id": "mie-03", "pref": "三重県", "region": "近畿", "landmark": "鬼ヶ城", "souvenir": "くノ一verスライム" },
+  { "id": "mie-04", "pref": "三重県", "region": "近畿", "landmark": "夫婦岩", "souvenir": "伊勢のエビ" },
+  { "id": "mie-05", "pref": "三重県", "region": "近畿", "landmark": "鈴鹿サーキット", "souvenir": "サーキットの模型" },
+  { "id": "mie-06", "pref": "三重県", "region": "近畿", "landmark": "志摩スペイン村", "souvenir": "松坂の牛" },
+
+  { "id": "shiga-01", "pref": "滋賀県", "region": "近畿", "landmark": "比叡山延暦寺", "souvenir": "オオナマズ" },
+  { "id": "shiga-02", "pref": "滋賀県", "region": "近畿", "landmark": "安土城跡", "souvenir": "わがしのたね" },
+  { "id": "shiga-03", "pref": "滋賀県", "region": "近畿", "landmark": "甲賀の里 忍術村", "souvenir": "忍びスライム" },
+  { "id": "shiga-04", "pref": "滋賀県", "region": "近畿", "landmark": "彦根城", "souvenir": "たぬきの置物" },
+  { "id": "shiga-05", "pref": "滋賀県", "region": "近畿", "landmark": "高島市 メタセコイア並木", "souvenir": "鮒のお寿司" },
+  { "id": "shiga-06", "pref": "滋賀県", "region": "近畿", "landmark": "びわ湖バレイ(入口)", "souvenir": "赤いこんにゃく" },
+
+  { "id": "kyoto-01", "pref": "京都府", "region": "近畿", "landmark": "東映太秦映画村", "souvenir": "三度笠のおおがらす" },
+  { "id": "kyoto-02", "pref": "京都府", "region": "近畿", "landmark": "長岡天満宮", "souvenir": "梅の木" },
+  { "id": "kyoto-03", "pref": "京都府", "region": "近畿", "landmark": "天橋立", "souvenir": "舞妓はんスライム" },
+  { "id": "kyoto-04", "pref": "京都府", "region": "近畿", "landmark": "金閣寺", "souvenir": "金色の寺" },
+  { "id": "kyoto-05", "pref": "京都府", "region": "近畿", "landmark": "平等院鳳凰堂", "souvenir": "抹茶" },
+  { "id": "kyoto-06", "pref": "京都府", "region": "近畿", "landmark": "美山かやぶきの里", "souvenir": "スライムのやつはし" },
+
+  { "id": "osaka-01", "pref": "大阪府", "region": "近畿", "landmark": "大仙陵古墳", "souvenir": "豚まん" },
+  { "id": "osaka-02", "pref": "大阪府", "region": "近畿", "landmark": "ひらかたパーク", "souvenir": "虹色の観覧車" },
+  { "id": "osaka-03", "pref": "大阪府", "region": "近畿", "landmark": "通天閣", "souvenir": "たこやきスライム" },
+  { "id": "osaka-04", "pref": "大阪府", "region": "近畿", "landmark": "万博記念公園 太陽の塔", "souvenir": "大阪のお好み焼き" },
+  { "id": "osaka-05", "pref": "大阪府", "region": "近畿", "landmark": "関西空港", "souvenir": "大坂城の置物" },
+  { "id": "osaka-06", "pref": "大阪府", "region": "近畿", "landmark": "海遊館", "souvenir": "ヒョウ柄のシャツ" },
+
+  { "id": "hyogo-01", "pref": "兵庫県", "region": "近畿", "landmark": "宝塚大劇場", "souvenir": "大階段のステージ" },
+  { "id": "hyogo-02", "pref": "兵庫県", "region": "近畿", "landmark": "余部鉄橋 空の駅", "souvenir": "但馬の牛のステーキ" },
+  { "id": "hyogo-03", "pref": "兵庫県", "region": "近畿", "landmark": "有馬温泉", "souvenir": "セーラーver.スライム" },
+  { "id": "hyogo-04", "pref": "兵庫県", "region": "近畿", "landmark": "姫路城", "souvenir": "姫路城の置物" },
+  { "id": "hyogo-05", "pref": "兵庫県", "region": "近畿", "landmark": "神戸ポートタワー", "souvenir": "球場の土" },
+  { "id": "hyogo-06", "pref": "兵庫県", "region": "近畿", "landmark": "淡路島 ドラゴンクエスト記念碑", "souvenir": "DQ記念碑" },
+
+  { "id": "nara-01", "pref": "奈良県", "region": "近畿", "landmark": "生駒山上遊園地", "souvenir": "遊園地の夜景" },
+  { "id": "nara-02", "pref": "奈良県", "region": "近畿", "landmark": "西ノ京駅", "souvenir": "鹿せんべい" },
+  { "id": "nara-03", "pref": "奈良県", "region": "近畿", "landmark": "平城宮跡", "souvenir": "聖徳太子スライム" },
+  { "id": "nara-04", "pref": "奈良県", "region": "近畿", "landmark": "東大寺", "souvenir": "五重塔の置物" },
+  { "id": "nara-05", "pref": "奈良県", "region": "近畿", "landmark": "谷瀬の吊り橋", "souvenir": "奈良のお漬け物" },
+  { "id": "nara-06", "pref": "奈良県", "region": "近畿", "landmark": "長谷寺", "souvenir": "鹿の置物" },
+
+  { "id": "wakayama-01", "pref": "和歌山県", "region": "近畿", "landmark": "串本海中公園", "souvenir": "養殖クロマグロ" },
+  { "id": "wakayama-02", "pref": "和歌山県", "region": "近畿", "landmark": "白崎海洋公園展望台", "souvenir": "白岩の海岸の置物" },
+  { "id": "wakayama-03", "pref": "和歌山県", "region": "近畿", "landmark": "高野山 根本大塔", "souvenir": "梅干しスライム" },
+  { "id": "wakayama-04", "pref": "和歌山県", "region": "近畿", "landmark": "和歌山城", "souvenir": "みかん" },
+  { "id": "wakayama-05", "pref": "和歌山県", "region": "近畿", "landmark": "アドベンチャーワールド", "souvenir": "柿" },
+  { "id": "wakayama-06", "pref": "和歌山県", "region": "近畿", "landmark": "那智の滝", "souvenir": "三本足のカラス" }
+]
