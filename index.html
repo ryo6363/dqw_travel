@@ -19,6 +19,8 @@
     --color-text: #f5f6fa;
     --color-text-dim: #aab4e0;
     --color-warn: #ff8a6b;
+    --color-map-sea: #050821;
+    --color-map-land: #3c4fb0;
   }
 
   * {
@@ -228,6 +230,110 @@
     color: var(--color-text);
     font-weight: bold;
     text-align: right;
+  }
+
+  .map-heading {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    color: var(--color-gold);
+    letter-spacing: 0.04em;
+  }
+
+  .map-frame {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 2px solid var(--color-border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--color-map-sea);
+  }
+
+  .japan-map {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .map-sea {
+    fill: var(--color-map-sea);
+  }
+
+  .map-land {
+    fill: var(--color-map-land);
+    stroke: var(--color-gold);
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+
+  .map-caption {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--color-text-dim);
+    text-align: center;
+    min-height: 1.4em;
+  }
+
+  .map-marker {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .map-marker.is-active {
+    opacity: 1;
+  }
+
+  .map-marker circle {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .marker-glow-outer {
+    fill: var(--color-gold);
+    opacity: 0.3;
+    animation: marker-pulse-outer 1.6s ease-in-out infinite;
+  }
+
+  .marker-glow-inner {
+    fill: var(--color-gold);
+    opacity: 0.55;
+    animation: marker-pulse-inner 1.6s ease-in-out infinite;
+  }
+
+  .marker-core {
+    fill: #ffffff;
+    filter: drop-shadow(0 0 3px var(--color-gold));
+    animation: marker-twinkle 1.6s ease-in-out infinite;
+  }
+
+  @keyframes marker-pulse-outer {
+    0%, 100% {
+      transform: scale(0.6);
+      opacity: 0.12;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes marker-pulse-inner {
+    0%, 100% {
+      transform: scale(0.75);
+      opacity: 0.45;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes marker-twinkle {
+    0%, 100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .spot-list-window {
@@ -444,6 +550,25 @@
       </div>
     </section>
 
+    <section class="rpg-window map-window" aria-label="ちず">
+      <h2 class="map-heading">ちず</h2>
+      <div class="map-frame">
+        <svg class="japan-map" viewBox="0 0 480 480" role="img" aria-label="日本列島をデフォルメした地図">
+          <rect class="map-sea" x="0" y="0" width="480" height="480" />
+          <polygon class="map-land" points="360,50 385,30 415,25 435,45 440,75 425,105 395,115 365,100 350,75" />
+          <polygon class="map-land" points="398,88 365,132 350,167 315,195 270,207 225,230 180,243 180,267 225,260 270,295 315,235 350,223 365,168 398,112" />
+          <polygon class="map-land" points="230,258 250,256 263,270 253,285 230,288 213,275" />
+          <polygon class="map-land" points="195,235 210,255 205,280 215,300 195,325 175,330 160,305 165,275 155,255 170,240" />
+          <g id="map-marker" class="map-marker" transform="translate(240,240)">
+            <circle class="marker-glow-outer" r="16" />
+            <circle class="marker-glow-inner" r="9" />
+            <circle class="marker-core" r="4" />
+          </g>
+        </svg>
+      </div>
+      <p id="map-caption" class="map-caption">まだ　もくてきちは　きまっていない……</p>
+    </section>
+
     <section class="rpg-window spot-list-window" aria-label="おみやげスポット一覧">
       <div class="spot-list-header">
         <h2 class="spot-list-heading">おみやげスポット　いちらん</h2>
@@ -453,6 +578,7 @@
     </section>
   </div>
 
+  <script src="map.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

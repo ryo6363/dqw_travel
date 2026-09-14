@@ -243,6 +243,7 @@ function spinRoulette() {
   resultPlaceholder.hidden = true;
   resultDetail.hidden = true;
   resultSlot.hidden = false;
+  window.DQWMap?.hideMapMarker();
 
   const finalSpot = availableSpots[Math.floor(Math.random() * availableSpots.length)];
   const totalDuration = 500 + Math.random() * 1000;
@@ -273,6 +274,7 @@ function showResult(spot) {
   resultLandmark.textContent = spot.landmark;
   resultSouvenir.textContent = spot.souvenir;
   resultDetail.hidden = false;
+  window.DQWMap?.showSpotOnMap(spot);
 
   spinning = false;
   rouletteButton.disabled = false;
@@ -285,6 +287,7 @@ function showNoDestination() {
   resultMessage.classList.add('is-warning');
   resultMessage.textContent = 'もう　いきさきが　ありません！';
   resultDetail.hidden = false;
+  window.DQWMap?.hideMapMarker();
 }
 
 rouletteButton.addEventListener('click', spinRoulette);
