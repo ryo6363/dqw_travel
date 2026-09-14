@@ -4,10 +4,21 @@ const NARA_LAT = 34.6851;
 const NARA_LNG = 135.8048;
 const EARTH_RADIUS_KM = 6371;
 
+const NARA_STATION_LAT = 34.6842;
+const NARA_STATION_LNG = 135.833;
+
+const DISTANCE_TIER_ABYSS_EPITHETS = [
+  '深淵なる　異境の地',
+  '魔の気配　ただよう　辺境',
+  '常人　立ち入れぬ　封印の地',
+  '旅人の　覚悟を試す　果ての国',
+];
+
 let spotsData = [];
 let collectedIds = new Set();
 let selectedRegions = new Set();
 let selectedDistanceKm = 'all';
+let selectedDistanceMode = 'within';
 let spinning = false;
 
 let selectedListRegion = 'all';
@@ -16,6 +27,7 @@ let selectedListPref = 'all';
 const spotListEl = document.getElementById('spot-list');
 const spotCountEl = document.getElementById('spot-count');
 const regionFilterEl = document.getElementById('region-filter');
+const distanceModeFilterEl = document.getElementById('distance-mode-filter');
 const distanceFilterEl = document.getElementById('distance-filter');
 const filterCountEl = document.getElementById('filter-count');
 const listRegionTabsEl = document.getElementById('list-region-tabs');
@@ -35,6 +47,12 @@ const resultLines = document.getElementById('result-lines');
 const resultPref = document.getElementById('result-pref');
 const resultLandmark = document.getElementById('result-landmark');
 const resultSouvenir = document.getElementById('result-souvenir');
+const resultDistanceEl = document.getElementById('result-distance');
+const resultDistanceValueEl = document.getElementById('result-distance-value');
+const resultDistanceEpithetEl = document.getElementById('result-distance-epithet');
+const resultActionsEl = document.getElementById('result-actions');
+const mapLinkButton = document.getElementById('map-link-button');
+const driveLinkButton = document.getElementById('drive-link-button');
 
 function toRadians(degrees) {
   return (degrees * Math.PI) / 180;
@@ -48,6 +66,32 @@ function haversineDistanceKm(lat1, lng1, lat2, lng2) {
     Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return EARTH_RADIUS_KM * c;
+}
+
+function getDistanceTier(km) {
+  if (km < 100) {
+    return 'safe';
+  }
+  if (km < 300) {
+    return 'day';
+  }
+  if (km < 500) {
+    return 'expedition';
+  }
+  return 'abyss';
+}
+
+function buildDriveUrl(spot) {
+  const origin = `${NARA_STATION_LAT},${NARA_STATION_LNG}`;
+  const destination = `${spot.lat},${spot.lng}`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travel_mode=driving`;
+}
+
+function openInNewTab(url) {
+  if (!url) {
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function loadCollectedIds() {
@@ -87,6 +131,7 @@ async function loadSpots() {
     updateSpotCount();
     renderRegionFilters();
     setupDistanceFilter();
+    setupDistanceModeFilter();
     updateFilterCount();
     setupBulkActions();
   } catch (err) {
@@ -136,11 +181,21 @@ function renderSpots(spots) {
     landmark.className = 'spot-landmark';
     landmark.textContent = spot.landmark;
 
+    const mapButton = document.createElement('button');
+    mapButton.type = 'button';
+    mapButton.className = 'spot-map-button';
+    mapButton.textContent = '🗺';
+    mapButton.setAttribute('aria-label', `${spot.landmark}を地図で見る`);
+    mapButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openInNewTab(spot.mapsUrl);
+    });
+
     const collectedLabel = document.createElement('span');
     collectedLabel.className = 'spot-collected-label';
     collectedLabel.textContent = '取得済み';
 
-    li.append(checkboxWrap, region, pref, landmark, collectedLabel);
+    li.append(checkboxWrap, region, pref, landmark, mapButton, collectedLabel);
     spotListEl.appendChild(li);
   });
 }
@@ -372,6 +427,20 @@ function setupDistanceFilter() {
   });
 }
 
+function setupDistanceModeFilter() {
+  const buttons = [...distanceModeFilterEl.querySelectorAll('.filter-chip')];
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      buttons.forEach((b) => b.classList.remove('is-active'));
+      button.classList.add('is-active');
+
+      selectedDistanceMode = button.dataset.mode;
+      updateFilterCount();
+    });
+  });
+}
+
 function matchesRegionFilter(spot) {
   return selectedRegions.size === 0 || selectedRegions.has(spot.region);
 }
@@ -381,7 +450,7 @@ function matchesDistanceFilter(spot) {
     return true;
   }
   const distance = haversineDistanceKm(NARA_LAT, NARA_LNG, spot.lat, spot.lng);
-  return distance <= selectedDistanceKm;
+  return selectedDistanceMode === 'atLeast' ? distance >= selectedDistanceKm : distance <= selectedDistanceKm;
 }
 
 function getEligibleSpots() {
@@ -440,6 +509,26 @@ function showResult(spot) {
   resultPref.textContent = spot.pref;
   resultLandmark.textContent = spot.landmark;
   resultSouvenir.textContent = spot.souvenir;
+
+  const distanceKm = haversineDistanceKm(NARA_LAT, NARA_LNG, spot.lat, spot.lng);
+  const tier = getDistanceTier(distanceKm);
+  resultDistanceEl.hidden = false;
+  resultDistanceEl.className = `result-distance tier-${tier}`;
+  resultDistanceValueEl.textContent = `奈良市から　約${Math.round(distanceKm)}km`;
+
+  if (tier === 'abyss') {
+    const epithet = DISTANCE_TIER_ABYSS_EPITHETS[Math.floor(Math.random() * DISTANCE_TIER_ABYSS_EPITHETS.length)];
+    resultDistanceEpithetEl.textContent = epithet;
+    resultDistanceEpithetEl.hidden = false;
+  } else {
+    resultDistanceEpithetEl.hidden = true;
+    resultDistanceEpithetEl.textContent = '';
+  }
+
+  resultActionsEl.hidden = false;
+  mapLinkButton.onclick = () => openInNewTab(spot.mapsUrl);
+  driveLinkButton.onclick = () => openInNewTab(buildDriveUrl(spot));
+
   resultDetail.hidden = false;
   window.DQWMap?.showSpotOnMap(spot);
 
@@ -451,6 +540,8 @@ function showNoDestination() {
   resultPlaceholder.hidden = true;
   resultSlot.hidden = true;
   resultLines.hidden = true;
+  resultDistanceEl.hidden = true;
+  resultActionsEl.hidden = true;
   resultMessage.classList.add('is-warning');
   resultMessage.textContent = 'もう　いきさきが　ありません！';
   resultDetail.hidden = false;

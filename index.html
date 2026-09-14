@@ -23,6 +23,9 @@
     --color-map-land: #3c4fb0;
     --color-success: #3ddc84;
     --color-danger: #ff5a6a;
+    --color-abyss: #b98bff;
+    --color-abyss-glow: #6a2fd9;
+    --color-abyss-bg: #170b30;
   }
 
   * {
@@ -118,6 +121,16 @@
 
   .distance-options {
     gap: 8px;
+    margin-top: 10px;
+  }
+
+  .distance-mode-options {
+    gap: 8px;
+  }
+
+  .distance-mode-options .filter-chip {
+    min-width: 64px;
+    text-align: center;
   }
 
   .filter-chip {
@@ -232,6 +245,94 @@
     color: var(--color-text);
     font-weight: bold;
     text-align: right;
+  }
+
+  .result-distance {
+    margin-top: 14px;
+    padding: 10px;
+    border-top: 1px dotted rgba(245, 246, 250, 0.25);
+    font-size: 0.85rem;
+    text-align: center;
+    border-radius: 3px;
+  }
+
+  .result-distance-value {
+    font-weight: bold;
+    letter-spacing: 0.03em;
+  }
+
+  .result-distance.tier-safe .result-distance-value {
+    color: var(--color-success);
+  }
+
+  .result-distance.tier-day .result-distance-value {
+    color: var(--color-gold);
+  }
+
+  .result-distance.tier-expedition .result-distance-value {
+    color: var(--color-danger);
+  }
+
+  .result-distance.tier-abyss {
+    margin-top: 18px;
+    padding: 12px 10px;
+    background: radial-gradient(ellipse at center, var(--color-abyss-bg), transparent 75%);
+    border-top: 1px dotted rgba(185, 139, 255, 0.35);
+  }
+
+  .result-distance.tier-abyss .result-distance-value {
+    color: var(--color-abyss);
+    text-shadow: 0 0 8px var(--color-abyss-glow), 0 0 18px rgba(106, 47, 217, 0.6);
+    animation: abyss-flicker 2.4s ease-in-out infinite;
+  }
+
+  .result-distance-epithet {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--color-abyss);
+    text-shadow: 0 0 6px var(--color-abyss-glow);
+    letter-spacing: 0.06em;
+    animation: abyss-flicker 2.4s ease-in-out infinite;
+    animation-delay: 0.3s;
+  }
+
+  @keyframes abyss-flicker {
+    0%, 100% {
+      opacity: 1;
+    }
+    45% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.85;
+    }
+    55% {
+      opacity: 0.45;
+    }
+    70% {
+      opacity: 1;
+    }
+  }
+
+  .result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .result-action-button {
+    font-family: inherit;
+    font-size: 0.8rem;
+    color: var(--color-gold);
+    background: var(--color-window-end);
+    border: 2px solid var(--color-border);
+    border-radius: 3px;
+    padding: 9px 16px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
   }
 
   .map-heading {
@@ -603,6 +704,18 @@
     font-size: 0.85rem;
   }
 
+  .spot-map-button {
+    flex: 0 0 auto;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--color-gold);
+    background: var(--color-window-end);
+    border: 2px solid var(--color-border);
+    border-radius: 3px;
+    padding: 4px 6px;
+    cursor: pointer;
+  }
+
   .spot-collected-label {
     display: none;
     flex: 0 0 auto;
@@ -637,10 +750,18 @@
 
       <div class="filter-group">
         <p class="filter-label">きょり(奈良市から)</p>
+        <div id="distance-mode-filter" class="filter-options distance-mode-options">
+          <button type="button" class="filter-chip is-active" data-mode="within">以内</button>
+          <button type="button" class="filter-chip" data-mode="atLeast">以上</button>
+        </div>
         <div id="distance-filter" class="filter-options distance-options">
-          <button type="button" class="filter-chip" data-distance="50">50km以内</button>
-          <button type="button" class="filter-chip" data-distance="100">100km以内</button>
-          <button type="button" class="filter-chip" data-distance="300">300km以内</button>
+          <button type="button" class="filter-chip" data-distance="50">50km</button>
+          <button type="button" class="filter-chip" data-distance="100">100km</button>
+          <button type="button" class="filter-chip" data-distance="200">200km</button>
+          <button type="button" class="filter-chip" data-distance="300">300km</button>
+          <button type="button" class="filter-chip" data-distance="500">500km</button>
+          <button type="button" class="filter-chip" data-distance="800">800km</button>
+          <button type="button" class="filter-chip" data-distance="1000">1000km</button>
           <button type="button" class="filter-chip is-active" data-distance="all">制限なし</button>
         </div>
       </div>
@@ -669,6 +790,14 @@
               <span class="label">おみやげ</span>
               <span id="result-souvenir" class="value"></span>
             </div>
+          </div>
+          <div id="result-distance" class="result-distance" hidden>
+            <span id="result-distance-value" class="result-distance-value"></span>
+            <span id="result-distance-epithet" class="result-distance-epithet" hidden></span>
+          </div>
+          <div id="result-actions" class="result-actions" hidden>
+            <button id="map-link-button" type="button" class="result-action-button">地図で見る</button>
+            <button id="drive-link-button" type="button" class="result-action-button">車で行く</button>
           </div>
         </div>
       </div>
