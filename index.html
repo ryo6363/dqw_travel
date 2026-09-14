@@ -76,6 +76,73 @@
     letter-spacing: 0.04em;
   }
 
+  .filter-heading {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    color: var(--color-gold);
+    letter-spacing: 0.04em;
+  }
+
+  .filter-group {
+    margin-bottom: 16px;
+  }
+
+  .filter-group:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .filter-label {
+    margin: 0 0 8px;
+    font-size: 0.75rem;
+    color: var(--color-text-dim);
+    letter-spacing: 0.03em;
+  }
+
+  .filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
+
+  .region-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .distance-options {
+    gap: 8px;
+  }
+
+  .filter-chip {
+    font-family: inherit;
+    font-size: 0.75rem;
+    color: var(--color-text);
+    background: var(--color-window-end);
+    border: 2px solid var(--color-border);
+    border-radius: 3px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+
+  .filter-chip.is-active {
+    background: var(--color-gold);
+    color: var(--color-window-end);
+    border-color: var(--color-gold);
+    font-weight: bold;
+  }
+
+  .filter-count {
+    margin: 16px 0 0;
+    padding-top: 12px;
+    border-top: 2px dashed rgba(245, 246, 250, 0.3);
+    font-size: 0.8rem;
+    color: var(--color-text-dim);
+    text-align: right;
+  }
+
   .roulette-window {
     text-align: center;
   }
@@ -329,6 +396,27 @@
       <h1 class="title">DQW おみやげルーレット</h1>
       <p class="subtitle">全国のおみやげスポットから<br>つぎの　もくてきちを　きめよう</p>
     </header>
+
+    <section class="rpg-window filter-window" aria-label="しぼりこみ">
+      <h2 class="filter-heading">しぼりこみ</h2>
+
+      <div class="filter-group">
+        <p class="filter-label">ちほう(未選択時は　ぜんちほう)</p>
+        <div id="region-filter" class="filter-options region-options"></div>
+      </div>
+
+      <div class="filter-group">
+        <p class="filter-label">きょり(奈良市から)</p>
+        <div id="distance-filter" class="filter-options distance-options">
+          <button type="button" class="filter-chip" data-distance="50">50km以内</button>
+          <button type="button" class="filter-chip" data-distance="100">100km以内</button>
+          <button type="button" class="filter-chip" data-distance="300">300km以内</button>
+          <button type="button" class="filter-chip is-active" data-distance="all">制限なし</button>
+        </div>
+      </div>
+
+      <p id="filter-count" class="filter-count">対象: 0件</p>
+    </section>
 
     <section class="rpg-window roulette-window" aria-label="おみやげルーレット">
       <button id="roulette-button" class="roulette-button" type="button">ルーレットを回す！</button>

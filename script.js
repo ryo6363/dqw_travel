@@ -1,11 +1,20 @@
 const COLLECTED_STORAGE_KEY = 'dqw-omiyage-collected-ids';
 
+const NARA_LAT = 34.6851;
+const NARA_LNG = 135.8048;
+const EARTH_RADIUS_KM = 6371;
+
 let spotsData = [];
 let collectedIds = new Set();
+let selectedRegions = new Set();
+let selectedDistanceKm = 'all';
 let spinning = false;
 
 const spotListEl = document.getElementById('spot-list');
 const spotCountEl = document.getElementById('spot-count');
+const regionFilterEl = document.getElementById('region-filter');
+const distanceFilterEl = document.getElementById('distance-filter');
+const filterCountEl = document.getElementById('filter-count');
 const rouletteButton = document.getElementById('roulette-button');
 const resultPlaceholder = document.getElementById('result-placeholder');
 const resultSlot = document.getElementById('result-slot');
@@ -15,6 +24,20 @@ const resultLines = document.getElementById('result-lines');
 const resultPref = document.getElementById('result-pref');
 const resultLandmark = document.getElementById('result-landmark');
 const resultSouvenir = document.getElementById('result-souvenir');
+
+function toRadians(degrees) {
+  return (degrees * Math.PI) / 180;
+}
+
+function haversineDistanceKm(lat1, lng1, lat2, lng2) {
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_KM * c;
+}
 
 function loadCollectedIds() {
   try {
@@ -49,6 +72,9 @@ async function loadSpots() {
     spotsData = await res.json();
     renderSpots(spotsData);
     updateSpotCount();
+    renderRegionFilters();
+    setupDistanceFilter();
+    updateFilterCount();
   } catch (err) {
     console.error('おみやげスポットの読み込みに失敗しました', err);
     spotListEl.textContent = 'おみやげスポットの読み込みに失敗しました。';
@@ -114,6 +140,7 @@ function toggleCollected(id, isCollected, listItemEl) {
   saveCollectedIds();
   listItemEl.classList.toggle('is-collected', isCollected);
   updateSpotCount();
+  updateFilterCount();
 }
 
 function updateSpotCount() {
@@ -122,8 +149,82 @@ function updateSpotCount() {
   spotCountEl.textContent = `未取得 ${uncollected}件 / 全${total}件`;
 }
 
-function getAvailableSpots() {
-  return spotsData.filter((spot) => !collectedIds.has(spot.id));
+function renderRegionFilters() {
+  const regions = [...new Set(spotsData.map((spot) => spot.region))];
+  selectedRegions = new Set(regions);
+
+  regionFilterEl.innerHTML = '';
+
+  regions.forEach((region) => {
+    const label = document.createElement('label');
+    label.className = 'region-option';
+
+    const checkboxWrap = document.createElement('span');
+    checkboxWrap.className = 'spot-checkbox-wrap';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'spot-checkbox-input';
+    checkbox.checked = true;
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedRegions.add(region);
+      } else {
+        selectedRegions.delete(region);
+      }
+      updateFilterCount();
+    });
+
+    const checkboxBox = document.createElement('span');
+    checkboxBox.className = 'spot-checkbox-box';
+    checkboxBox.setAttribute('aria-hidden', 'true');
+
+    checkboxWrap.append(checkbox, checkboxBox);
+
+    const text = document.createElement('span');
+    text.className = 'region-option-text';
+    text.textContent = region;
+
+    label.append(checkboxWrap, text);
+    regionFilterEl.appendChild(label);
+  });
+}
+
+function setupDistanceFilter() {
+  const buttons = [...distanceFilterEl.querySelectorAll('.filter-chip')];
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      buttons.forEach((b) => b.classList.remove('is-active'));
+      button.classList.add('is-active');
+
+      const value = button.dataset.distance;
+      selectedDistanceKm = value === 'all' ? 'all' : Number(value);
+      updateFilterCount();
+    });
+  });
+}
+
+function matchesRegionFilter(spot) {
+  return selectedRegions.size === 0 || selectedRegions.has(spot.region);
+}
+
+function matchesDistanceFilter(spot) {
+  if (selectedDistanceKm === 'all') {
+    return true;
+  }
+  const distance = haversineDistanceKm(NARA_LAT, NARA_LNG, spot.lat, spot.lng);
+  return distance <= selectedDistanceKm;
+}
+
+function getEligibleSpots() {
+  return spotsData.filter(
+    (spot) => !collectedIds.has(spot.id) && matchesRegionFilter(spot) && matchesDistanceFilter(spot)
+  );
+}
+
+function updateFilterCount() {
+  filterCountEl.textContent = `対象: ${getEligibleSpots().length}件`;
 }
 
 function spinRoulette() {
@@ -131,7 +232,7 @@ function spinRoulette() {
     return;
   }
 
-  const availableSpots = getAvailableSpots();
+  const availableSpots = getEligibleSpots();
   if (availableSpots.length === 0) {
     showNoDestination();
     return;
