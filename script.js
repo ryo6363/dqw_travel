@@ -10,11 +10,22 @@ let selectedRegions = new Set();
 let selectedDistanceKm = 'all';
 let spinning = false;
 
+let selectedListRegion = 'all';
+let selectedListPref = 'all';
+
 const spotListEl = document.getElementById('spot-list');
 const spotCountEl = document.getElementById('spot-count');
 const regionFilterEl = document.getElementById('region-filter');
 const distanceFilterEl = document.getElementById('distance-filter');
 const filterCountEl = document.getElementById('filter-count');
+const listRegionTabsEl = document.getElementById('list-region-tabs');
+const listPrefTabsEl = document.getElementById('list-pref-tabs');
+const bulkCheckButton = document.getElementById('bulk-check-button');
+const bulkUncheckButton = document.getElementById('bulk-uncheck-button');
+const confirmOverlay = document.getElementById('confirm-overlay');
+const confirmMessageEl = document.getElementById('confirm-message');
+const confirmYesButton = document.getElementById('confirm-yes-button');
+const confirmNoButton = document.getElementById('confirm-no-button');
 const rouletteButton = document.getElementById('roulette-button');
 const resultPlaceholder = document.getElementById('result-placeholder');
 const resultSlot = document.getElementById('result-slot');
@@ -70,11 +81,14 @@ async function loadSpots() {
       throw new Error(`HTTP ${res.status}`);
     }
     spotsData = await res.json();
-    renderSpots(spotsData);
+    renderListRegionTabs();
+    renderListPrefTabs();
+    renderSpots(getVisibleSpots());
     updateSpotCount();
     renderRegionFilters();
     setupDistanceFilter();
     updateFilterCount();
+    setupBulkActions();
   } catch (err) {
     console.error('おみやげスポットの読み込みに失敗しました', err);
     spotListEl.textContent = 'おみやげスポットの読み込みに失敗しました。';
@@ -147,6 +161,159 @@ function updateSpotCount() {
   const total = spotsData.length;
   const uncollected = spotsData.filter((spot) => !collectedIds.has(spot.id)).length;
   spotCountEl.textContent = `未取得 ${uncollected}件 / 全${total}件`;
+}
+
+function getVisibleSpots() {
+  return spotsData.filter((spot) => {
+    if (selectedListRegion !== 'all' && spot.region !== selectedListRegion) {
+      return false;
+    }
+    if (selectedListPref !== 'all' && spot.pref !== selectedListPref) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function getListScopeLabel() {
+  if (selectedListPref !== 'all') {
+    return selectedListPref;
+  }
+  if (selectedListRegion !== 'all') {
+    return selectedListRegion;
+  }
+  return '全国のスポット全て';
+}
+
+function renderListRegionTabs() {
+  const regions = [...new Set(spotsData.map((spot) => spot.region))];
+
+  listRegionTabsEl.innerHTML = '';
+
+  const allTab = createListTab('全国', selectedListRegion === 'all', () => {
+    selectedListRegion = 'all';
+    selectedListPref = 'all';
+    renderListRegionTabs();
+    renderListPrefTabs();
+    renderSpots(getVisibleSpots());
+  });
+  listRegionTabsEl.appendChild(allTab);
+
+  regions.forEach((region) => {
+    const tab = createListTab(region, selectedListRegion === region, () => {
+      selectedListRegion = region;
+      selectedListPref = 'all';
+      renderListRegionTabs();
+      renderListPrefTabs();
+      renderSpots(getVisibleSpots());
+    });
+    listRegionTabsEl.appendChild(tab);
+  });
+}
+
+function renderListPrefTabs() {
+  listPrefTabsEl.innerHTML = '';
+
+  if (selectedListRegion === 'all') {
+    listPrefTabsEl.hidden = true;
+    return;
+  }
+
+  const prefs = [
+    ...new Set(spotsData.filter((spot) => spot.region === selectedListRegion).map((spot) => spot.pref)),
+  ];
+
+  listPrefTabsEl.hidden = false;
+
+  const allTab = createListTab('すべて', selectedListPref === 'all', () => {
+    selectedListPref = 'all';
+    renderListPrefTabs();
+    renderSpots(getVisibleSpots());
+  });
+  listPrefTabsEl.appendChild(allTab);
+
+  prefs.forEach((pref) => {
+    const tab = createListTab(pref, selectedListPref === pref, () => {
+      selectedListPref = pref;
+      renderListPrefTabs();
+      renderSpots(getVisibleSpots());
+    });
+    listPrefTabsEl.appendChild(tab);
+  });
+}
+
+function createListTab(label, isActive, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'list-tab';
+  button.classList.toggle('is-active', isActive);
+  button.textContent = label;
+  button.setAttribute('role', 'tab');
+  button.setAttribute('aria-selected', String(isActive));
+  button.addEventListener('click', onClick);
+  return button;
+}
+
+function showConfirm(message, variant, onConfirm) {
+  confirmMessageEl.textContent = message;
+  confirmYesButton.classList.remove('is-success', 'is-danger');
+  confirmYesButton.classList.add(variant === 'danger' ? 'is-danger' : 'is-success');
+  confirmOverlay.hidden = false;
+
+  const cleanup = () => {
+    confirmOverlay.hidden = true;
+    confirmYesButton.removeEventListener('click', handleYes);
+    confirmNoButton.removeEventListener('click', handleNo);
+    confirmOverlay.removeEventListener('click', handleOverlayClick);
+  };
+  const handleYes = () => {
+    cleanup();
+    onConfirm();
+  };
+  const handleNo = () => {
+    cleanup();
+  };
+  const handleOverlayClick = (event) => {
+    if (event.target === confirmOverlay) {
+      cleanup();
+    }
+  };
+
+  confirmYesButton.addEventListener('click', handleYes);
+  confirmNoButton.addEventListener('click', handleNo);
+  confirmOverlay.addEventListener('click', handleOverlayClick);
+}
+
+function setupBulkActions() {
+  bulkCheckButton.addEventListener('click', () => {
+    const visibleSpots = getVisibleSpots();
+    if (visibleSpots.length === 0) {
+      return;
+    }
+    const label = getListScopeLabel();
+    showConfirm(`${label}を　すべて取得済みに　します。よろしいですか？`, 'success', () => {
+      visibleSpots.forEach((spot) => collectedIds.add(spot.id));
+      saveCollectedIds();
+      renderSpots(getVisibleSpots());
+      updateSpotCount();
+      updateFilterCount();
+    });
+  });
+
+  bulkUncheckButton.addEventListener('click', () => {
+    const visibleSpots = getVisibleSpots();
+    if (visibleSpots.length === 0) {
+      return;
+    }
+    const label = getListScopeLabel();
+    showConfirm(`${label}を　すべて未取得に　もどします。よろしいですか？`, 'danger', () => {
+      visibleSpots.forEach((spot) => collectedIds.delete(spot.id));
+      saveCollectedIds();
+      renderSpots(getVisibleSpots());
+      updateSpotCount();
+      updateFilterCount();
+    });
+  });
 }
 
 function renderRegionFilters() {

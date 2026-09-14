@@ -21,6 +21,8 @@
     --color-warn: #ff8a6b;
     --color-map-sea: #050821;
     --color-map-land: #3c4fb0;
+    --color-success: #3ddc84;
+    --color-danger: #ff5a6a;
   }
 
   * {
@@ -336,6 +338,128 @@
     }
   }
 
+  .list-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .list-tabs[hidden] {
+    display: none;
+  }
+
+  .list-tab {
+    font-family: inherit;
+    font-size: 0.7rem;
+    color: var(--color-text);
+    background: var(--color-window-end);
+    border: 2px solid var(--color-border);
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .list-tab.is-active {
+    background: var(--color-gold);
+    color: var(--color-window-end);
+    border-color: var(--color-gold);
+    font-weight: bold;
+  }
+
+  .bulk-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 4px 0 16px;
+  }
+
+  .bulk-button {
+    font-family: inherit;
+    font-size: 0.7rem;
+    background: var(--color-window-end);
+    border: 2px solid;
+    border-radius: 3px;
+    padding: 8px 12px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+
+  .bulk-button-check {
+    color: var(--color-success);
+    border-color: var(--color-success);
+  }
+
+  .bulk-button-uncheck {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .bulk-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 4, 16, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+  }
+
+  .modal-overlay[hidden] {
+    display: none;
+  }
+
+  .modal-window {
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+
+  .modal-message {
+    margin: 0 0 22px;
+    font-size: 0.9rem;
+    line-height: 1.9;
+    letter-spacing: 0.03em;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .modal-button {
+    font-family: inherit;
+    font-size: 0.85rem;
+    background: var(--color-window-end);
+    border: 3px solid var(--color-border);
+    border-radius: 3px;
+    padding: 10px 24px;
+    cursor: pointer;
+    color: var(--color-text);
+  }
+
+  .modal-button-confirm {
+    color: var(--color-gold);
+  }
+
+  .modal-button-confirm.is-danger {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .modal-button-confirm.is-success {
+    color: var(--color-success);
+    border-color: var(--color-success);
+  }
+
   .spot-list-window {
     display: flex;
     flex-direction: column;
@@ -574,8 +698,27 @@
         <h2 class="spot-list-heading">おみやげスポット　いちらん</h2>
         <p id="spot-count" class="spot-count"></p>
       </div>
+
+      <div id="list-region-tabs" class="list-tabs" role="tablist" aria-label="ちほうタブ"></div>
+      <div id="list-pref-tabs" class="list-tabs" role="tablist" aria-label="とどうふけんタブ" hidden></div>
+
+      <div class="bulk-actions">
+        <button id="bulk-check-button" type="button" class="bulk-button bulk-button-check">表示中を一括で取得済みにする</button>
+        <button id="bulk-uncheck-button" type="button" class="bulk-button bulk-button-uncheck">表示中を一括で未取得に戻す</button>
+      </div>
+
       <ul id="spot-list" class="spot-list"></ul>
     </section>
+  </div>
+
+  <div id="confirm-overlay" class="modal-overlay" hidden>
+    <div class="rpg-window modal-window">
+      <p id="confirm-message" class="modal-message"></p>
+      <div class="modal-actions">
+        <button id="confirm-yes-button" type="button" class="modal-button modal-button-confirm">はい</button>
+        <button id="confirm-no-button" type="button" class="modal-button">いいえ</button>
+      </div>
+    </div>
   </div>
 
   <script src="map.js"></script>
