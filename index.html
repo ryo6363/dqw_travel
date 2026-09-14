@@ -164,7 +164,48 @@
     text-align: center;
   }
 
-  .roulette-button {
+  .mode-select {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .mode-button {
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    background: var(--color-window-end);
+    border: 3px solid var(--color-border);
+    border-radius: 3px;
+    padding: 10px 16px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+
+  .mode-button.is-active {
+    background: var(--color-gold);
+    color: var(--color-window-end);
+    border-color: var(--color-gold);
+    font-weight: bold;
+  }
+
+  .mode-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .roulette-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .roulette-button,
+  .stop-button {
     font-family: inherit;
     font-size: 1rem;
     letter-spacing: 0.06em;
@@ -181,10 +222,25 @@
     animation: cursor-blink 1s steps(1) infinite;
   }
 
-  .roulette-button:disabled {
+  .stop-button {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .stop-button::before {
+    content: "■ ";
+  }
+
+  .stop-button:not(:disabled) {
+    animation: stop-ready-pulse 1s steps(1) infinite;
+  }
+
+  .roulette-button:disabled,
+  .stop-button:disabled {
     color: var(--color-text-dim);
+    border-color: var(--color-border);
     cursor: default;
-    opacity: 0.7;
+    opacity: 0.6;
   }
 
   .roulette-button:disabled::before {
@@ -195,6 +251,230 @@
     50% {
       opacity: 0;
     }
+  }
+
+  @keyframes stop-ready-pulse {
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  .stage {
+    margin-bottom: 8px;
+  }
+
+  .stage[hidden] {
+    display: none;
+  }
+
+  .scroll-frame {
+    position: relative;
+    overflow: hidden;
+    border: 3px solid var(--color-border);
+    border-radius: 4px;
+    background:
+      repeating-linear-gradient(
+        180deg,
+        rgba(255, 210, 63, 0.05) 0px,
+        rgba(255, 210, 63, 0.05) 2px,
+        transparent 2px,
+        transparent 6px
+      ),
+      linear-gradient(180deg, var(--color-window-start), var(--color-window-end));
+    box-shadow: inset 0 0 0 2px var(--color-window-inner-border);
+    padding: 28px 16px;
+  }
+
+  .result-slot {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    color: var(--color-text);
+    text-shadow: 0 0 0 transparent;
+    transition: text-shadow 0.15s ease;
+  }
+
+  .result-slot.is-spinning {
+    color: var(--color-gold);
+    text-shadow: 0 0 10px rgba(255, 210, 63, 0.7);
+  }
+
+  .scroll-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 210, 63, 0.4) 55%, transparent 75%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .scroll-flash.is-flashing {
+    animation: scroll-flash-pop 0.6s ease-out;
+  }
+
+  @keyframes scroll-flash-pop {
+    0% {
+      opacity: 0;
+    }
+    15% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .scroll-impact {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--color-gold);
+    text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(-8deg);
+    pointer-events: none;
+  }
+
+  .scroll-impact.is-visible {
+    animation: scroll-impact-pop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1);
+  }
+
+  @keyframes scroll-impact-pop {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3) rotate(-8deg);
+    }
+    30% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.15) rotate(-4deg);
+    }
+    55% {
+      transform: translate(-50%, -50%) scale(0.95) rotate(0deg);
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95) rotate(0deg);
+    }
+  }
+
+  .scroll-stage.is-shaking .scroll-frame {
+    animation: scroll-shake 0.4s ease-in-out;
+  }
+
+  @keyframes scroll-shake {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    20% {
+      transform: translate(-4px, 2px);
+    }
+    40% {
+      transform: translate(4px, -2px);
+    }
+    60% {
+      transform: translate(-3px, -1px);
+    }
+    80% {
+      transform: translate(3px, 1px);
+    }
+  }
+
+  .compass-frame {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  .compass-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .compass-outer-ring {
+    fill: var(--color-window-end);
+    stroke: var(--color-gold);
+    stroke-width: 3;
+  }
+
+  .compass-star-ring {
+    fill: none;
+    stroke: rgba(255, 210, 63, 0.4);
+    stroke-width: 1;
+    stroke-dasharray: 2 6;
+  }
+
+  .compass-wedge {
+    stroke: var(--color-gold);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+
+  .compass-wedge.is-even {
+    fill: var(--color-window-start);
+  }
+
+  .compass-wedge.is-odd {
+    fill: var(--color-window-end);
+  }
+
+  .compass-wedge.is-landed {
+    fill: var(--color-gold);
+    animation: compass-wedge-glow 0.9s ease-in-out infinite;
+  }
+
+  @keyframes compass-wedge-glow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  .compass-label {
+    font-family: inherit;
+    font-size: 9px;
+    fill: var(--color-text);
+    pointer-events: none;
+  }
+
+  .compass-label.is-landed {
+    fill: var(--color-window-end);
+    font-weight: bold;
+  }
+
+  .compass-hub-outer {
+    fill: var(--color-window-end);
+    stroke: var(--color-gold);
+    stroke-width: 2;
+  }
+
+  .compass-hub-inner {
+    fill: url(#compass-hub-gradient);
+    stroke: var(--color-border);
+    stroke-width: 1;
+  }
+
+  .compass-pointer {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--color-gold);
+    text-shadow: 0 0 6px rgba(255, 210, 63, 0.8), 2px 2px 0 #000;
   }
 
   .result-box {
@@ -208,12 +488,6 @@
     margin: 0;
     font-size: 0.85rem;
     color: var(--color-text-dim);
-  }
-
-  .result-slot {
-    margin: 0;
-    font-size: 1.15rem;
-    letter-spacing: 0.04em;
   }
 
   .result-message {
@@ -772,11 +1046,45 @@
     </section>
 
     <section class="rpg-window roulette-window" aria-label="おみやげルーレット">
-      <button id="roulette-button" class="roulette-button" type="button">ルーレットを回す！</button>
+      <div class="mode-select" role="group" aria-label="えんしゅつをえらぶ">
+        <button id="mode-scroll-button" type="button" class="mode-button" data-mode="scroll">めぐりの巻物</button>
+        <button id="mode-compass-button" type="button" class="mode-button" data-mode="compass">運命の羅針盤</button>
+      </div>
+
+      <div class="roulette-controls">
+        <button id="roulette-button" class="roulette-button" type="button">ルーレットを回す！</button>
+        <button id="stop-button" class="stop-button" type="button" disabled hidden>ストップ！</button>
+      </div>
+
+      <div id="scroll-stage" class="stage scroll-stage">
+        <div class="scroll-frame">
+          <div id="scroll-flash" class="scroll-flash"></div>
+          <p id="result-slot" class="result-slot">ボタンを　おすと……</p>
+          <div id="scroll-impact" class="scroll-impact">ドン！</div>
+        </div>
+      </div>
+
+      <div id="compass-stage" class="stage compass-stage" hidden>
+        <div class="compass-frame">
+          <svg id="compass-svg" class="compass-svg" viewBox="0 0 300 300" role="img" aria-label="運命の羅針盤">
+            <defs>
+              <radialGradient id="compass-hub-gradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#fff6d8" />
+                <stop offset="100%" stop-color="var(--color-gold)" />
+              </radialGradient>
+            </defs>
+            <circle class="compass-outer-ring" cx="150" cy="150" r="145" />
+            <circle class="compass-star-ring" cx="150" cy="150" r="128" />
+            <g id="compass-wheel-group"></g>
+            <circle class="compass-hub-outer" cx="150" cy="150" r="26" />
+            <circle class="compass-hub-inner" cx="150" cy="150" r="14" />
+          </svg>
+          <div class="compass-pointer" aria-hidden="true">▼</div>
+        </div>
+      </div>
 
       <div id="result-box" class="result-box">
         <p id="result-placeholder" class="result-placeholder">ボタンを　おすと……</p>
-        <p id="result-slot" class="result-slot" hidden></p>
         <div id="result-detail" class="result-detail" hidden>
           <p id="result-message" class="result-message"></p>
           <div id="result-lines" class="result-lines">

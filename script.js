@@ -13,15 +13,35 @@ const DISTANCE_TIER_ABYSS_EPITHETS = [
   '旅人の　覚悟を試す　果ての国',
 ];
 
+const ROULETTE_MODE_STORAGE_KEY = 'dqw-omiyage-roulette-mode';
+const MIN_SPIN_MS = 2500;
+const MAX_SPIN_MS = 10000;
+const SCROLL_FAST_INTERVAL_MS = 45;
+const COMPASS_FAST_DEG_PER_MS = 0.9;
+const COMPASS_HUB_RADIUS = 120;
+
 let spotsData = [];
 let collectedIds = new Set();
 let selectedRegions = new Set();
 let selectedDistanceKm = 'all';
 let selectedDistanceMode = 'within';
-let spinning = false;
 
 let selectedListRegion = 'all';
 let selectedListPref = 'all';
+
+let rouletteMode = 'scroll';
+let spinState = 'idle';
+let currentFinalSpot = null;
+let currentEligiblePool = [];
+let minStopTimerId = null;
+let autoStopTimerId = null;
+let scrollFastTimerId = null;
+let currentWheelInfo = { level: 'landmark', items: [] };
+let compassWedgeEls = [];
+let compassLabelEls = [];
+let compassAngle = 0;
+let compassRafId = null;
+let compassLastFrameTime = 0;
 
 const spotListEl = document.getElementById('spot-list');
 const spotCountEl = document.getElementById('spot-count');
@@ -37,7 +57,15 @@ const confirmOverlay = document.getElementById('confirm-overlay');
 const confirmMessageEl = document.getElementById('confirm-message');
 const confirmYesButton = document.getElementById('confirm-yes-button');
 const confirmNoButton = document.getElementById('confirm-no-button');
+const modeScrollButton = document.getElementById('mode-scroll-button');
+const modeCompassButton = document.getElementById('mode-compass-button');
 const rouletteButton = document.getElementById('roulette-button');
+const stopButton = document.getElementById('stop-button');
+const scrollStageEl = document.getElementById('scroll-stage');
+const scrollFlashEl = document.getElementById('scroll-flash');
+const scrollImpactEl = document.getElementById('scroll-impact');
+const compassStageEl = document.getElementById('compass-stage');
+const compassWheelGroupEl = document.getElementById('compass-wheel-group');
 const resultPlaceholder = document.getElementById('result-placeholder');
 const resultSlot = document.getElementById('result-slot');
 const resultDetail = document.getElementById('result-detail');
@@ -131,8 +159,11 @@ async function loadSpots() {
     renderRegionFilters();
     setupDistanceFilter();
     setupDistanceModeFilter();
-    updateFilterCount();
     setupBulkActions();
+    setupModeButtons();
+    renderCompassWheel(getEligibleSpots());
+    setRouletteMode(loadRouletteMode());
+    updateFilterCount();
   } catch (err) {
     console.error('おみやげスポットの読み込みに失敗しました', err);
     spotListEl.textContent = 'おみやげスポットの読み込みに失敗しました。';
@@ -460,48 +491,304 @@ function getEligibleSpots() {
 
 function updateFilterCount() {
   filterCountEl.textContent = `対象: ${getEligibleSpots().length}件`;
+  if (spinState === 'idle') {
+    renderCompassWheel(getEligibleSpots());
+  }
 }
 
-function spinRoulette() {
-  if (spinning) {
+function loadRouletteMode() {
+  try {
+    const saved = localStorage.getItem(ROULETTE_MODE_STORAGE_KEY);
+    return saved === 'compass' ? 'compass' : 'scroll';
+  } catch (err) {
+    return 'scroll';
+  }
+}
+
+function saveRouletteMode(mode) {
+  try {
+    localStorage.setItem(ROULETTE_MODE_STORAGE_KEY, mode);
+  } catch (err) {
+    console.error('えんしゅつモードの保存に失敗しました', err);
+  }
+}
+
+function setRouletteMode(mode) {
+  rouletteMode = mode;
+  modeScrollButton.classList.toggle('is-active', mode === 'scroll');
+  modeCompassButton.classList.toggle('is-active', mode === 'compass');
+  scrollStageEl.hidden = mode !== 'scroll';
+  compassStageEl.hidden = mode !== 'compass';
+  saveRouletteMode(mode);
+}
+
+function setupModeButtons() {
+  modeScrollButton.addEventListener('click', () => {
+    if (spinState === 'idle') {
+      setRouletteMode('scroll');
+    }
+  });
+  modeCompassButton.addEventListener('click', () => {
+    if (spinState === 'idle') {
+      setRouletteMode('compass');
+      renderCompassWheel(getEligibleSpots());
+    }
+  });
+}
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function computeWheelInfo(pool) {
+  if (pool.length === 0) {
+    return { level: 'landmark', items: [] };
+  }
+  const regions = [...new Set(pool.map((spot) => spot.region))];
+  if (regions.length >= 2) {
+    return { level: 'region', items: regions.map((region) => ({ key: region, label: region })) };
+  }
+  const prefs = [...new Set(pool.map((spot) => spot.pref))];
+  if (prefs.length >= 2) {
+    return { level: 'pref', items: prefs.map((pref) => ({ key: pref, label: pref })) };
+  }
+  return { level: 'landmark', items: pool.map((spot) => ({ key: spot.id, label: spot.landmark })) };
+}
+
+function segmentIndexForSpot(spot, wheelInfo) {
+  const matchKey = wheelInfo.level === 'region' ? spot.region : wheelInfo.level === 'pref' ? spot.pref : spot.id;
+  const index = wheelInfo.items.findIndex((item) => item.key === matchKey);
+  return index === -1 ? 0 : index;
+}
+
+function renderCompassWheel(pool) {
+  currentWheelInfo = computeWheelInfo(pool);
+  compassWheelGroupEl.innerHTML = '';
+  compassWedgeEls = [];
+  compassLabelEls = [];
+
+  const items = currentWheelInfo.items;
+  const n = items.length;
+  if (n === 0) {
     return;
   }
 
-  const availableSpots = getEligibleSpots();
-  if (availableSpots.length === 0) {
+  const segAngle = 360 / n;
+  const cx = 150;
+  const cy = 150;
+  const r = COMPASS_HUB_RADIUS;
+  const svgNs = 'http://www.w3.org/2000/svg';
+
+  items.forEach((item, i) => {
+    const a0 = i * segAngle;
+    const a1 = (i + 1) * segAngle;
+    const p0 = polarToCartesian(cx, cy, r, a0);
+    const p1 = polarToCartesian(cx, cy, r, a1);
+    const largeArc = a1 - a0 > 180 ? 1 : 0;
+
+    const path = document.createElementNS(svgNs, 'path');
+    path.setAttribute(
+      'd',
+      `M ${cx} ${cy} L ${p0.x.toFixed(2)} ${p0.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} Z`
+    );
+    path.setAttribute('class', `compass-wedge ${i % 2 === 0 ? 'is-even' : 'is-odd'}`);
+    compassWheelGroupEl.appendChild(path);
+    compassWedgeEls.push(path);
+
+    const mid = a0 + segAngle / 2;
+    const text = document.createElementNS(svgNs, 'text');
+    text.setAttribute('x', String(cx));
+    text.setAttribute('y', String(cy - r * 0.68));
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('transform', `rotate(${mid.toFixed(2)} ${cx} ${cy})`);
+    text.setAttribute('class', 'compass-label');
+    text.textContent = item.label;
+    compassWheelGroupEl.appendChild(text);
+    compassLabelEls.push(text);
+  });
+}
+
+function applyCompassRotation(angle) {
+  compassWheelGroupEl.setAttribute('transform', `rotate(${angle.toFixed(2)} 150 150)`);
+}
+
+function startCompassFastPhase() {
+  compassLastFrameTime = performance.now();
+
+  function frame(now) {
+    const dt = now - compassLastFrameTime;
+    compassLastFrameTime = now;
+    compassAngle = (compassAngle + COMPASS_FAST_DEG_PER_MS * dt) % 360;
+    applyCompassRotation(compassAngle);
+    if (spinState === 'fast') {
+      compassRafId = requestAnimationFrame(frame);
+    }
+  }
+
+  compassRafId = requestAnimationFrame(frame);
+}
+
+function landCompassEffect(targetIndex) {
+  compassWedgeEls.forEach((el, i) => el.classList.toggle('is-landed', i === targetIndex));
+  compassLabelEls.forEach((el, i) => el.classList.toggle('is-landed', i === targetIndex));
+  setTimeout(() => {
+    compassWedgeEls.forEach((el) => el.classList.remove('is-landed'));
+    compassLabelEls.forEach((el) => el.classList.remove('is-landed'));
+  }, 2200);
+}
+
+function runCompassDecel(target) {
+  cancelAnimationFrame(compassRafId);
+
+  const targetIndex = segmentIndexForSpot(target, currentWheelInfo);
+  const segAngle = 360 / currentWheelInfo.items.length;
+  const targetCenter = targetIndex * segAngle + segAngle / 2;
+  const targetMod = ((360 - targetCenter) % 360 + 360) % 360;
+  const extraTurns = 3 + Math.floor(Math.random() * 2);
+
+  let base = targetMod;
+  while (base < compassAngle) {
+    base += 360;
+  }
+  const finalAngle = base + extraTurns * 360;
+  const startAngle = compassAngle;
+  const startTime = performance.now();
+  const decelDuration = 1800 + Math.random() * 700;
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / decelDuration, 1);
+    const eased = 1 - (1 - t) ** 3;
+    compassAngle = startAngle + (finalAngle - startAngle) * eased;
+    applyCompassRotation(compassAngle);
+
+    if (t < 1) {
+      compassRafId = requestAnimationFrame(step);
+    } else {
+      landCompassEffect(targetIndex);
+      finishRoulette(target);
+    }
+  }
+
+  compassRafId = requestAnimationFrame(step);
+}
+
+function startScrollFastPhase(pool) {
+  resultSlot.classList.add('is-spinning');
+  scrollFastTimerId = setInterval(() => {
+    resultSlot.textContent = pool[Math.floor(Math.random() * pool.length)].landmark;
+  }, SCROLL_FAST_INTERVAL_MS);
+}
+
+function landScrollEffect() {
+  resultSlot.classList.remove('is-spinning');
+  scrollFlashEl.classList.remove('is-flashing');
+  scrollImpactEl.classList.remove('is-visible');
+  scrollStageEl.classList.remove('is-shaking');
+  void scrollFlashEl.offsetWidth;
+  scrollFlashEl.classList.add('is-flashing');
+  scrollImpactEl.classList.add('is-visible');
+  scrollStageEl.classList.add('is-shaking');
+  setTimeout(() => {
+    scrollFlashEl.classList.remove('is-flashing');
+    scrollImpactEl.classList.remove('is-visible');
+    scrollStageEl.classList.remove('is-shaking');
+  }, 750);
+}
+
+function runScrollDecel(target, pool) {
+  clearInterval(scrollFastTimerId);
+
+  let delay = 55;
+  const totalTicks = 9 + Math.floor(Math.random() * 5);
+  let tick = 0;
+
+  function step() {
+    tick += 1;
+    if (tick >= totalTicks) {
+      resultSlot.textContent = target.landmark;
+      landScrollEffect();
+      finishRoulette(target);
+      return;
+    }
+    resultSlot.textContent = pool[Math.floor(Math.random() * pool.length)].landmark;
+    delay = Math.min(delay * 1.28, 260);
+    setTimeout(step, delay);
+  }
+
+  setTimeout(step, delay);
+}
+
+function startRoulette() {
+  if (spinState !== 'idle') {
+    return;
+  }
+
+  const eligible = getEligibleSpots();
+  if (eligible.length === 0) {
     showNoDestination();
     return;
   }
 
-  spinning = true;
+  currentEligiblePool = eligible;
+  currentFinalSpot = eligible[Math.floor(Math.random() * eligible.length)];
+  spinState = 'fast';
+
   rouletteButton.disabled = true;
+  modeScrollButton.disabled = true;
+  modeCompassButton.disabled = true;
   resultPlaceholder.hidden = true;
   resultDetail.hidden = true;
-  resultSlot.hidden = false;
   window.DQWMap?.hideMapMarker();
 
-  const finalSpot = availableSpots[Math.floor(Math.random() * availableSpots.length)];
-  const totalDuration = 500 + Math.random() * 1000;
-  const startTime = performance.now();
-  let delay = 60;
+  stopButton.hidden = false;
+  stopButton.disabled = true;
 
-  function tick() {
-    resultSlot.textContent = availableSpots[Math.floor(Math.random() * availableSpots.length)].landmark;
-
-    if (performance.now() - startTime >= totalDuration) {
-      showResult(finalSpot);
-      return;
-    }
-
-    delay = Math.min(delay * 1.15, 260);
-    setTimeout(tick, delay);
+  if (rouletteMode === 'compass') {
+    renderCompassWheel(currentEligiblePool);
+    startCompassFastPhase();
+  } else {
+    startScrollFastPhase(currentEligiblePool);
   }
 
-  tick();
+  minStopTimerId = setTimeout(() => {
+    if (spinState === 'fast') {
+      stopButton.disabled = false;
+    }
+  }, MIN_SPIN_MS);
+
+  autoStopTimerId = setTimeout(() => {
+    triggerStop();
+  }, MAX_SPIN_MS);
+}
+
+function triggerStop() {
+  if (spinState !== 'fast') {
+    return;
+  }
+  spinState = 'decel';
+  clearTimeout(minStopTimerId);
+  clearTimeout(autoStopTimerId);
+  stopButton.disabled = true;
+
+  if (rouletteMode === 'compass') {
+    runCompassDecel(currentFinalSpot);
+  } else {
+    runScrollDecel(currentFinalSpot, currentEligiblePool);
+  }
+}
+
+function finishRoulette(spot) {
+  spinState = 'idle';
+  rouletteButton.disabled = false;
+  modeScrollButton.disabled = false;
+  modeCompassButton.disabled = false;
+  stopButton.hidden = true;
+  showResult(spot);
 }
 
 function showResult(spot) {
-  resultSlot.hidden = true;
   resultMessage.classList.remove('is-warning');
   resultMessage.textContent = 'たびの　ゆくえが　きまった！';
   resultLines.hidden = false;
@@ -530,14 +817,10 @@ function showResult(spot) {
 
   resultDetail.hidden = false;
   window.DQWMap?.showSpotOnMap(spot);
-
-  spinning = false;
-  rouletteButton.disabled = false;
 }
 
 function showNoDestination() {
   resultPlaceholder.hidden = true;
-  resultSlot.hidden = true;
   resultLines.hidden = true;
   resultDistanceEl.hidden = true;
   resultActionsEl.hidden = true;
@@ -547,6 +830,11 @@ function showNoDestination() {
   window.DQWMap?.hideMapMarker();
 }
 
-rouletteButton.addEventListener('click', spinRoulette);
+rouletteButton.addEventListener('click', startRoulette);
+stopButton.addEventListener('click', () => {
+  if (!stopButton.disabled) {
+    triggerStop();
+  }
+});
 
 loadSpots();
